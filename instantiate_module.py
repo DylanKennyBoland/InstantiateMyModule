@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# Author: Dylan Boland
+
 # Modules that will be useful
 import argparse
 import os
@@ -68,96 +70,96 @@ if __name__ == "__main__":
     
 
     # ==== Define the Patterns to Look For ====
-    module_name_pattern = re.compile(r'module\s+([a-zA-Z\_0-9]+)[\n\s]+#?[\n\s]*\(')
-    module_parameters_pattern = re.compile(r'parameter\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*=')
-    module_inputs_pattern = re.compile(r'input\s*(?:wire)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*,?')
-    module_outputs_pattern = re.compile(r'output\s*(?:wire|reg)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*,?')
+    moduleNamePattern = re.compile(r'module\s+([a-zA-Z\_0-9]+)[\n\s]+#?[\n\s]*\(')
+    moduleParamsPattern = re.compile(r'parameter\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*=')
+    moduleInputsPattern = re.compile(r'input\s*(?:wire)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*,?')
+    moduleOutputsPattern = re.compile(r'output\s*(?:wire|reg)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*,?')
     # ==== Extract the Module Name first ====
-    matches = re.findall(module_name_pattern, moduleContents)
+    matches = re.findall(moduleNamePattern, moduleContents)
     # ==== Check that only one Match was found for the Module Name ====
     if (len(matches) != 1):
         print(moduleNameNotIdentified)
     else:
-        module_name = matches[0] # store the module name
-    print(module_name)
+        moduleName = matches[0] # store the module name
+    print(moduleName)
 
     # ==== Extract the Module Parameters (if there are any) ====
-    matches = re.findall(module_parameters_pattern, moduleContents)
+    matches = re.findall(moduleParamsPattern, moduleContents)
     # ==== Check if any Matches were found ====
     if (len(matches) == 0): # if there were zero matches
         print(noParamsFound) # print out message saying the module has no parameters (or none were identified)
         moduleHasParams = False
     else:
-        module_parameters = matches # capture the list of module parameters
-        print(module_parameters)
+        moduleParams = matches # capture the list of module parameters
+        print(moduleParams)
         moduleHasParams = True
     
     # ==== Extract the Module Inputs ====
-    matches = re.findall(module_inputs_pattern, moduleContents)
+    matches = re.findall(moduleInputsPattern, moduleContents)
     if (len(matches) == 0): # if there were no matches
         print(noInputsIdentified) # print a message saying that no module inputs were found
     else:
-        module_inputs = matches # capture the list of module inputs
-        print(module_inputs)
+        moduleInputs = matches # capture the list of module inputs
+        print(moduleInputs)
     
     # ==== Extract the Module Outputs ====
-    matches = re.findall(module_outputs_pattern, moduleContents)
+    matches = re.findall(moduleOutputsPattern, moduleContents)
     if (len(matches) == 0): # if there were no matches
         print(noOutputsIdentified) # print a message saying that no module outputs were found
     else:
-        module_outputs = matches # capture the list of module outputs
-        print(module_outputs)
+        moduleOutputs = matches # capture the list of module outputs
+        print(moduleOutputs)
     
     # ==== Instantiate the Module ====
     #
     # ==== Step 1: Create the Parameter Part of the String (if there are any parameters) ====
     if (moduleHasParams):
         paramStr = ""
-        numParams = len(module_parameters) # get the number of parameters
-        for i, param in enumerate(module_parameters):
+        numParams = len(moduleParams) # get the number of parameters
+        for i, param in enumerate(moduleParams):
             if (i == numParams - 1):
                 paramStr += f".{param}({param})"
             else:
                 paramStr += f".{param}({param}),\n"
     
     # ==== Step 2: Create Part of the String with the Inputs ====
-    input_ports = ""
-    for input_port in module_inputs:
-        input_ports += f".{input_port}({input_port}),\n\t"
+    inputPortsStr = ""
+    for inputPort in moduleInputs:
+        inputPortsStr += f".{inputPort}({inputPort}),\n\t"
 
     # ==== Step 3: Create Part of the String with the Outputs ====
-    output_ports = ""
-    numOutputs = len(module_outputs) # number of outputs for the module
-    for i, output_port in enumerate(module_outputs):
+    outputPortsStr = ""
+    numOutputs = len(moduleOutputs) # number of outputs for the module
+    for i, outputPort in enumerate(moduleOutputs):
         if (i != numOutputs - 1):
-            output_ports += f".{output_port}({output_port}),\n\t"
+            outputPortsStr += f".{outputPort}({outputPort}),\n\t"
         else:
-            output_ports += f".{output_port}({output_port})"
+            outputPortsStr += f".{outputPort}({outputPort})"
     
     # ==== Step 4: Form the Final String =====
     instantiatedModule = "" # empty at the moment
     if (moduleHasParams):
-        # ==== Using f (formatted) strings ====
-        instantiatedModule += f"""{module_name} #
+        # ==== Using f (formatted) Strings ====
+        instantiatedModule += f"""{moduleName} #
         (
         {paramsHeader}
         {paramStr}
         ) dut
         (
         {inputPortsHeader}
-        {input_ports}{outputPortsHeader}{output_ports}
+        {inputPortsStr}{outputPortsHeader}{outputPortsStr}
         );"""
         print(instantiatedModule)
     else:
-        instantiatedModule += f"""{module_name}
+        instantiatedModule += f"""{moduleName} dut
         (
         {inputPortsHeader}
-        {input_ports}{outputPortsHeader}{output_ports}
+        {inputPortsStr}{outputPortsHeader}{outputPortsStr}
         );"""
         print(instantiatedModule)
     
-    # ==== Step 5: Write the Formatted String to a File <module_name>_instantiated.v (or .sv) ====
-    outputFileName = f"{module_name}_instantiated" + moduleFileType # name of the file to which we will write
+    # ==== Step 5: Write the Formatted String to a File <moduleName>_instantiated.v (or .sv) ====
+    outputFileName = f"{moduleName}_instantiated" + moduleFileType # name of the file to which we will write
     with open(outputFileName, "w") as p: # create (or open) the file in "write" mode
         p.write(instantiatedModule)
         print(goodbyeMsg.format(outputFileName))
