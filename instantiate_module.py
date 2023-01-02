@@ -70,10 +70,22 @@ if __name__ == "__main__":
     
 
     # ==== Define the Patterns to Look For ====
+    # NOTE: the patterns for looking for the inputs and outputs in the module
+    # contents use an idea called "negative lookbehind".
+    #
+    # (?<!(?: |/|[a-zA-Z\_])) <- The negative lookbehind expression.
+    #
+    # We do not wish to capture or match the word "input" or "output" when it appears
+    # as part of a comment. In order to achieve this, we make sure that any match for "input" or
+    # "output" is not preceded by any of the following:
+    # (1) A space (e.g., '// wdata is an input to the module')
+    # (2) A slash (e.g., '//input voltage data to the module')
+    # (3) A character (e.g., '// the reference voltage input, "vref_input"')
+    #
     moduleNamePattern = re.compile(r'module\s+([a-zA-Z\_0-9]+)[\n\s]+#?[\n\s]*\(')
-    moduleParamsPattern = re.compile(r'parameter\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*=')
-    moduleInputsPattern = re.compile(r'input\s*(?:wire)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*,?')
-    moduleOutputsPattern = re.compile(r'output\s*(?:wire|reg)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*,?')
+    moduleParamsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))parameter\s+(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*=')
+    moduleInputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))input\s+(?:wire)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*,?')
+    moduleOutputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))output\s+(?:wire|reg)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*,?')
     # ==== Extract the Module Name first ====
     matches = re.findall(moduleNamePattern, moduleContents)
     # ==== Check that only one Match was found for the Module Name ====
@@ -120,7 +132,7 @@ if __name__ == "__main__":
             if (i == numParams - 1):
                 paramStr += f".{param}({param})"
             else:
-                paramStr += f".{param}({param}),\n"
+                paramStr += f".{param}({param}),\n\t"
     
     # ==== Step 2: Create Part of the String with the Inputs ====
     inputPortsStr = ""
