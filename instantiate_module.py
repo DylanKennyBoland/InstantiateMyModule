@@ -8,14 +8,20 @@ import os
 import sys
 import re
 
-# Some general-info strings
-helpMsg = """The path to the Verilog or SystemVerilog module description should be
+# ==== Some General-info Strings ====
+# Tags - define these here so they can be quickly and easily changed
+errorTag   = """\t***Error: """
+successTag = """\t***Success: """
+infoTag    = """\t***Info: """
+
+# Standard help & error messages
+helpMsg    = """The path to the Verilog or SystemVerilog module description should be
 given after using the '--filename' switch."""
-noArgsMsg = """No input arguments were specified. Please use '--filename' followed 
+noArgsMsg  = """No input arguments were specified. Please use '--filename' followed 
 by the name of the module to be instantiated."""
-noSuchFileMsg = """The module file '{}' could not be located - double-check the name or file path."""
-fileReadSuccess = """The module file was read in successfully."""
-fileReadError = """The module file could not be read in successfully."""
+noSuchFileMsg   = errorTag + """The module file '{}' could not be located - double-check the name or file path."""
+fileReadSuccess = successTag + """The module file was read in successfully."""
+fileReadError   = errorTag + """The module file could not be read in successfully."""
 moduleNameNotIdentified = """The module name could not be identified. Please ensure that you have used
 a standard or conventional structure. An example is shown below:
             module serialTX #
@@ -32,11 +38,25 @@ a standard or conventional structure. An example is shown below:
                 );
                 // The module description or logic goes below
 """
-noParamsFound = """No parameters were identified for the module."""
-noInputsIdentified = """No module inputs were identified."""
-noOutputsIdentified = """No module outputs were identified."""
-goodbyeMsg = """Success! The instantiated module is at {}."""
+noParamsFound       = infoTag + """No parameters were identified for this module."""
+noInputsIdentified  = errorTag + """No module inputs were identified."""
+noOutputsIdentified = errorTag + """No module outputs were identified."""
+
+# Instantiated module print-out message
+jobDoneMsg = """
+\n\n\t===========================================================================
+\t\tAdditionally, you can see the instantiated module below!
+\t==========================================================================="""
+
+# Goodbye message
+goodbyeMsg = """
+\t===========================================================================
+\t\tSuccess! The instantiated module is at {}.
+\t==========================================================================="""
+
 # Some Header (Delimiter) Strings
+# These allow us to cleary separate input and
+# output ports when instantiating the module
 inputPortsHeader = """// ==== Inputs ===="""
 outputPortsHeader = """// ==== Outputs ====\n\t"""
 paramsHeader = """// ==== Parameters ===="""
@@ -82,10 +102,13 @@ if __name__ == "__main__":
     # (2) A slash (e.g., '//input voltage data to the module')
     # (3) A character (e.g., '// the reference voltage input, "vref_input"')
     #
-    moduleNamePattern = re.compile(r'module\s+([a-zA-Z\_0-9]+)[\n\s]+#?[\n\s]*\(')
-    moduleParamsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))parameter\s+(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*=')
-    moduleInputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))input\s+(?:wire)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*,?')
-    moduleOutputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))output\s+(?:wire|reg)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\])?\s*([a-zA-Z\_0-9]+)\s*,?')
+    # NOTE: the quantifier {0,2} that is used in some of the regular expressions below
+    # is to allow for one- and two-dimensional inputs or outputs - e.g.,
+    # "input [31:0][7:0] data"
+    moduleNamePattern = re.compile(r'module\s+([a-zA-Z\_0-9]+)[\n\s]*#?[\n\s]*\(')
+    moduleParamsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))parameter\s+(?:\[[a-zA-Z0-9\_\-\:]+\]){0,2}\s*([a-zA-Z\_0-9]+)\s*=')
+    moduleInputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))input\s+(?:wire)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
+    moduleOutputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))output\s+(?:wire|reg)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
     # ==== Extract the Module Name first ====
     matches = re.findall(moduleNamePattern, moduleContents)
     # ==== Check that only one Match was found for the Module Name ====
@@ -93,7 +116,6 @@ if __name__ == "__main__":
         print(moduleNameNotIdentified)
     else:
         moduleName = matches[0] # store the module name
-    print(moduleName)
 
     # ==== Extract the Module Parameters (if there are any) ====
     matches = re.findall(moduleParamsPattern, moduleContents)
@@ -103,7 +125,6 @@ if __name__ == "__main__":
         moduleHasParams = False
     else:
         moduleParams = matches # capture the list of module parameters
-        print(moduleParams)
         moduleHasParams = True
     
     # ==== Extract the Module Inputs ====
@@ -112,7 +133,6 @@ if __name__ == "__main__":
         print(noInputsIdentified) # print a message saying that no module inputs were found
     else:
         moduleInputs = matches # capture the list of module inputs
-        print(moduleInputs)
     
     # ==== Extract the Module Outputs ====
     matches = re.findall(moduleOutputsPattern, moduleContents)
@@ -120,7 +140,6 @@ if __name__ == "__main__":
         print(noOutputsIdentified) # print a message saying that no module outputs were found
     else:
         moduleOutputs = matches # capture the list of module outputs
-        print(moduleOutputs)
     
     # ==== Instantiate the Module ====
     #
@@ -161,19 +180,19 @@ if __name__ == "__main__":
         {inputPortsHeader}
         {inputPortsStr}{outputPortsHeader}{outputPortsStr}
         );"""
-        print(instantiatedModule)
     else:
         instantiatedModule += f"""{moduleName} dut
         (
         {inputPortsHeader}
         {inputPortsStr}{outputPortsHeader}{outputPortsStr}
         );"""
-        print(instantiatedModule)
     
     # ==== Step 5: Write the Formatted String to a File <moduleName>_instantiated.v (or .sv) ====
     outputFileName = f"{moduleName}_instantiated" + moduleFileType # name of the file to which we will write
     with open(outputFileName, "w") as p: # create (or open) the file in "write" mode
         p.write(instantiatedModule)
         print(goodbyeMsg.format(outputFileName))
+        print(jobDoneMsg)
+        print("\n" + instantiatedModule)
 
     
