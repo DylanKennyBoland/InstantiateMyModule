@@ -21,13 +21,18 @@ For example, suppose you keep the script at:
 
 	"/c/Users/Kenny/Desktop/InstantiateMyModule/instantiate_module.py"
 	
-You could add the follow line to your shell run-command (.rc) file (assuming a bash shell):
+You could add the following line to your shell run-command (.rc) file (assuming a bash shell):
 
 	'export PATH="/c/Users/Kenny/Desktop/InstantiateMyModule/instantiate_module.py":$PATH'
 
 *Alternatively, you could simply create an alias in your ~/.alias file. For example, you could
-add:
+add the following line to your .alias file (normally located in your home (~) directory):
 
 	"alias instantiate_module='py /c/Users/Kenny/Desktop/InstantiateMyModule/instantiate_module.py'"
+
+Then, regardless of where you are in your Linux environment, you could just use (after sourcing your
+.alias file):
+
+	"instantiate_module --filename <path_to_your_module>"
 
 I hope it helps! And do message if you see any bugs or ways in which it could be made a little better!
