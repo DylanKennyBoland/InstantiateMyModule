@@ -1,7 +1,7 @@
 `timescale 1ns / 1ns
 // Authors: Dylan Boland, James Callanan, Cuan De Burca.
 
-module AHBspi_master (
+module AHB_SPI_master (
 		// ==== Inputs ====
 		input wire HCLK,			// bus clock
 		input wire HRESETn,			// bus reset, active low

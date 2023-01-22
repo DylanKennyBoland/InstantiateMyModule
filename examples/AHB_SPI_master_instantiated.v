@@ -1,4 +1,4 @@
-AHBspi_master dut
+AHB_SPI_master dut
         (
         // ==== Inputs ====
         .HCLK(HCLK),
