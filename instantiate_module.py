@@ -15,10 +15,10 @@ successTag = """\t***Success: """
 infoTag    = """\t***Info: """
 
 # Standard help & error messages
-helpMsg    = """The path to the Verilog or SystemVerilog module description should be
+helpMsg    = infoTag + """The path to the Verilog or SystemVerilog module description should be
 given after using the '--filename' switch."""
-noArgsMsg  = """No input arguments were specified. Please use '--filename' followed 
-by the name of the module to be instantiated."""
+noArgsMsg  = errorTag + """No input arguments were specified. Please use '--filename' followed
+\tby the name of the module to be instantiated."""
 noSuchFileMsg   = errorTag + """The module file '{}' could not be located - double-check the name or file path."""
 fileReadSuccess = successTag + """The module file was read in successfully."""
 fileReadError   = errorTag + """The module file could not be read in successfully."""
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     with open(moduleFileName) as p:
         try:
             moduleContents = p.read() # read the file into a string
-            print(fileReadSuccess + "\n" + moduleContents)
+            print(fileReadSuccess)
         except:
             print(fileReadError)
             exit()
@@ -95,20 +95,32 @@ if __name__ == "__main__":
     #
     # (?<!(?: |/|[a-zA-Z\_])) <- The negative lookbehind expression.
     #
-    # We do not wish to capture or match the word "input" or "output" when it appears
-    # as part of a comment. In order to achieve this, we make sure that any match for "input" or
-    # "output" is not preceded by any of the following:
+    # We don't want to capture or match the words "input", "output" or "parameter" when they appear
+    # in a comment. In order to achieve this, we make sure that any match for "input", "output"
+    # or "parameter" is not preceded by any of the following:
     # (1) A space (e.g., '// wdata is an input to the module')
-    # (2) A slash (e.g., '//input voltage data to the module')
-    # (3) A character (e.g., '// the reference voltage input, "vref_input"')
+    # (2) A slash (e.g., '//output wdata')
+    # (3) A character (like an underscore) (e.g., '// the reference voltage input, "vref_input"')
     #
     # NOTE: the quantifier {0,2} that is used in some of the regular expressions below
-    # is to allow for one- and two-dimensional inputs or outputs - e.g.,
-    # "input [31:0][7:0] data"
-    moduleNamePattern = re.compile(r'module\s+([a-zA-Z\_0-9]+)[\n\s]*#?[\n\s]*\(')
-    moduleParamsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))parameter\s+(?:\[[a-zA-Z0-9\_\-\:]+\]){0,2}\s*([a-zA-Z\_0-9]+)\s*=')
-    moduleInputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))input\s+(?:wire)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
-    moduleOutputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))output\s+(?:wire|reg)?\s*(?:\[[a-zA-Z0-9\_\-\:]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
+    # is to allow for one- and two-dimensional inputs, outputs or parameters - e.g.,
+    # "input [31:0][7:0] data," <- Two dimensions
+    # "input [7:0] addr,"       <- One dimension
+    # "input sel,"              <- Single-bit input
+    #
+    # A pattern inside brackets "()" is a group, and Python regex supports group capture so
+    # that you can extract particular parts of a matched expression. We only want to capture certain
+    # parts of the matched expression, like the name of the input, output, or parameter. For any groups
+    # which we don't want to capture, we use "?:" at beginning - e.g.,
+    #
+    # "input(?:\s+wire\b|\s+reg\b)?..." <- The pattern "input" might be (?) followed by "wire" or "reg"... but don't capture them
+    #
+    # Lastly, we use "\b" in order to match whole words only. The "\b" means the pattern must be followed
+    # by a word boundary (e.g., a space or some non-word character).
+    moduleNamePattern    = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))module\s+([a-zA-Z\_0-9]+)[\n\s]*#?[\n\s]*\(')
+    moduleParamsPattern  = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))parameter\s*(?:\[[a-zA-Z0-9\_\-\+\: ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*=')
+    moduleInputsPattern  = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))input(?:\s+wire\b|\s+reg\b)?\s*(?:\[[a-zA-Z0-9\_\-\+\: ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
+    moduleOutputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))output(?:\s+wire\b|\s+reg\b)?\s*(?:\[[a-zA-Z0-9\_\-\+\: ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
     # ==== Extract the Module Name first ====
     matches = re.findall(moduleNamePattern, moduleContents)
     # ==== Check that only one Match was found for the Module Name ====
@@ -120,7 +132,7 @@ if __name__ == "__main__":
     # ==== Extract the Module Parameters (if there are any) ====
     matches = re.findall(moduleParamsPattern, moduleContents)
     # ==== Check if any Matches were found ====
-    if (len(matches) == 0): # if there were zero matches
+    if (len(matches) == 0):  # if there were zero matches
         print(noParamsFound) # print out message saying the module has no parameters (or none were identified)
         moduleHasParams = False
     else:
