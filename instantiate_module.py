@@ -22,8 +22,8 @@ noArgsMsg  = errorTag + """No input arguments were specified. Please use '--file
 noSuchFileMsg   = errorTag + """The module file '{}' could not be located - double-check the name or file path."""
 fileReadSuccess = successTag + """The module file was read in successfully."""
 fileReadError   = errorTag + """The module file could not be read in successfully."""
-moduleNameNotIdentified = """The module name could not be identified. Please ensure that you have used
-a standard or conventional structure. An example is shown below:
+moduleNameNotIdentified = errorTag + """The module name could not be identified. Please ensure that you have used
+\ta standard or conventional structure. An example is shown below:
             module serialTX #
                 (
                 parameter INCR = 26'd25770 // amount by which the accumulator is incremented
@@ -126,6 +126,7 @@ if __name__ == "__main__":
     # ==== Check that only one Match was found for the Module Name ====
     if (len(matches) != 1):
         print(moduleNameNotIdentified)
+        exit()
     else:
         moduleName = matches[0] # store the module name
 
