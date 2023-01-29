@@ -7,7 +7,7 @@ accumulator #
         (
         // ==== Inputs ====
         .clk(clk),
-	.reset(reset),
+	.reset_n(reset_n),
 	.data_in(data_in),
 	// ==== Outputs ====
 	.accum_out(accum_out)

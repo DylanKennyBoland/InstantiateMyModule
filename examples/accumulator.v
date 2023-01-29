@@ -9,7 +9,7 @@ module accumulator #
 	(
 	// ==== Inputs ====
 	input clk,
-	input reset, // active-low asynchronous reset
+	input reset_n, // active-low asynchronous reset
 	input [DATA_SZ-1:0] data_in, // the data in - interpret as a two's complement signed value
 	// ==== Outputs ====
 	output [ACCUM_SZ-1:0] accum_out // the output of the accumulator - a signed value in two's complement form
@@ -50,8 +50,8 @@ module accumulator #
 	assign accum_out = accum_reg; // the output is driven with whatever value is in the accumulator register
 	
 	// ==== Logic for Updating the Accumulator Register ====
-	always @ (posedge clk or negedge reset) begin
-		if (!reset) begin
+	always @ (posedge clk or negedge reset_n) begin
+		if (!reset_n) begin
 			accum_reg <= {ACCUM_SZ{1'b0}};
 		end else begin
 			if (sat_high) begin
