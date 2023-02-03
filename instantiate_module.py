@@ -118,9 +118,9 @@ if __name__ == "__main__":
     # Lastly, we use "\b" in order to match whole words only. The "\b" means the pattern must be followed
     # by a word boundary (e.g., a space or some non-word character).
     moduleNamePattern    = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))module\s+([a-zA-Z\_0-9]+)[\n\s]*#?[\n\s]*\(')
-    moduleParamsPattern  = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))parameter\s*(?:\[[a-zA-Z0-9\_\-\+\: ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*=')
-    moduleInputsPattern  = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))input(?:\s+wire\b|\s+reg\b)?\s*(?:\[[a-zA-Z0-9\_\-\+\: ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
-    moduleOutputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))output(?:\s+wire\b|\s+reg\b)?\s*(?:\[[a-zA-Z0-9\_\-\+\: ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
+    moduleParamsPattern  = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))parameter\s*(?:\[[`a-zA-Z0-9\_\-\+\:\*/ ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*=')
+    moduleInputsPattern  = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))input(?:\s+wire\b|\s+reg\b)?\s*(?:\[[`a-zA-Z0-9\_\-\+\:\*/ ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
+    moduleOutputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))output(?:\s+wire\b|\s+reg\b)?\s*(?:\[[`a-zA-Z0-9\_\-\+\:\*/ ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
     # ==== Extract the Module Name first ====
     matches = re.findall(moduleNamePattern, moduleContents)
     # ==== Check that only one Match was found for the Module Name ====
