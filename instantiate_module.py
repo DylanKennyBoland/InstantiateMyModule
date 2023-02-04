@@ -117,6 +117,18 @@ if __name__ == "__main__":
     #
     # Lastly, we use "\b" in order to match whole words only. The "\b" means the pattern must be followed
     # by a word boundary (e.g., a space or some non-word character).
+    #
+    # The backward tick (`) used in some of the character sets (e.g., [`a-zA-Z0-9\_\-\+\:\*/ ]) is to allow
+    # macros to be used when defining a signal's width (although parameters are usually used for this) - e.g.,
+    #
+    # "input [`ADDR_WIDTH - 1:0] addr; // the address lines (bus)"
+    #
+    # The "\*" and "\" used in some of the character sets are to allow the multiply-by (*) and divide-by (\) operators
+    # to be used when defining a signal's width - e.g.,
+    #
+    # "input [RX_BUFF_SZ_BITS/8 - 1:0] rx_byte_en; // the byte-enable bus for the receive buffer"
+    #
+    # "output [NUM_DEVICES*4 - 1:0] fault_status; // each device has four fault-status bits"
     moduleNamePattern    = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))module\s+([a-zA-Z\_0-9]+)[\n\s]*#?[\n\s]*\(')
     moduleParamsPattern  = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))parameter\s*(?:\[[`a-zA-Z0-9\_\-\+\:\*/ ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*=')
     moduleInputsPattern  = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))input(?:\s+wire\b|\s+reg\b)?\s*(?:\[[`a-zA-Z0-9\_\-\+\:\*/ ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
