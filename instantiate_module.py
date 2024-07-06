@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
-
+#
 # Author: Dylan Boland
+#
+# Notes:
+# (1) Works with Verilog (.v) and SystemVerilog (.sv) files.
+# (2) Consult the README file for instructions on how to use the script.
+# Alternatively, you can print the help message by running:
+#       instantiate_module.py --help
+#
 
 # Modules that will be useful
 import argparse
@@ -88,51 +95,77 @@ if __name__ == "__main__":
             print(fileReadError)
             exit()
     
-
     # ==== Define the Patterns to Look For ====
-    # NOTE: the patterns for looking for the inputs and outputs in the module
-    # contents use an idea called "negative lookbehind".
     #
-    # (?<!(?: |/|[a-zA-Z\_])) <- The negative lookbehind expression.
+    # The regular expressions (patterns) below use an idea called
+    # "negative lookbehind". This allows us to *avoid* matching the
+    # words "module", "parameter", "input", and "output" when they
+    # appear in a comment or as part of a longer word. For example, we
+    # wouldn't want to match the following instances of the word "output"
+    # when trying to extract the module's outputs:
     #
-    # We don't want to capture or match the words "input", "output" or "parameter" when they appear
-    # in a comment. In order to achieve this, we make sure that any match for "input", "output"
-    # or "parameter" is not preceded by any of the following:
-    # (1) A space (e.g., '// wdata is an input to the module')
-    # (2) A slash (e.g., '//output wdata')
-    # (3) A character (like an underscore) (e.g., '// the reference voltage input, "vref_input"')
+    # // output current_exceeded, <- part of a comment, so it's not an actual output port
+    # // this output goes to the clock/reset-management block <- the word has simply appeared in a comment
+    # * After 5 clock cycles, the controller-busy output will be de-asserted <- the word has simply popped up in a multi-line comment
+    # input wire [7:0] kp_multiplier_output <- the word has appeared in the name of an input!
     #
-    # NOTE: the quantifier {0,2} that is used in some of the regular expressions below
-    # is to allow for one- and two-dimensional inputs, outputs or parameters - e.g.,
-    # "input [31:0][7:0] data," <- Two dimensions
-    # "input [7:0] addr,"       <- One dimension
-    # "input sel,"              <- Single-bit input
+    # The negative-lookbehind expression is shown below:
     #
-    # A pattern inside brackets "()" is a group, and Python regex supports group capture so
-    # that you can extract particular parts of a matched expression. We only want to capture certain
-    # parts of the matched expression, like the name of the input, output, or parameter. For any groups
-    # which we don't want to capture, we use "?:" at beginning - e.g.,
+    # (?<!(?://[-\w\s]))(?<!(?:\*[-\w\s]))
     #
-    # "input(?:\s+wire\b|\s+reg\b)?..." <- The pattern "input" might be (?) followed by "wire" or "reg"... but don't capture them
+    # The above will avoid the following kinds of statements from being matched:
     #
-    # We use "\b" in order to match whole words only. The "\b" means the pattern must be followed
-    # by a word boundary (e.g., a space or some non-word character).
+    # // output current_threshold,
+    # *voutput
+    # //output will be in one-hot format
     #
-    # The backward tick (`) used in some of the character sets (e.g., [`a-zA-Z0-9\_\-\+\:\*/ ]) is to allow
-    # macros to be used when defining a signal's width (although parameters are usually used for this) - e.g.,
+    # However, the 're' module in Python requires that the lookbehind expression be of fixed
+    # width. The expression (?<!(?://[-\w\s])) has a width of 3: the two "/" symbols, and 
+    # one alphanumeric character (\w) or one space (\s). This is a problem, as a keyword
+    # may appear *anywhere* in a comment. Consider the comment below:
     #
-    # "input [`ADDR_WIDTH - 1:0] addr; // the address lines (bus)"
+    # //                       output dram_bank_closed
     #
-    # The "\*" and "\" used in some of the character sets are to allow the multiply-by (*) and divide-by (\) operators
-    # to be used when defining a signal's width.
-    moduleNamePattern    = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))module\s+([a-zA-Z\_0-9]+)[\n\s]*#?[\n\s]*\(')
-    moduleParamsPattern  = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))parameter\s*(?:\[[`a-zA-Z0-9\_\-\+\:\*/ ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*=')
-    moduleInputsPattern  = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))input(?:\s+wire\b|\s+reg\b)?\s*(?:\[[`a-zA-Z0-9\_\-\+\:\*/ ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
-    moduleOutputsPattern = re.compile(r'(?<!(?: |/|[a-zA-Z\_]))output(?:\s+wire\b|\s+reg\b)?\s*(?:\[[`a-zA-Z0-9\_\-\+\:\*/ ]+\]\s*){0,2}\s*([a-zA-Z\_0-9]+)\s*,?')
+    # We want Python to see "output", and then look back and say "Oh, this is part of a
+    # comment, so I will skip this line". But for Python to know it is part of a comment
+    # it needs to look back further than a space or two.
+    #
+    # We will use a 'for' loop to create the following kind of string which we will use in our
+    # regular expressions:
+    #
+    # (?<!(?://[-\w\s]))(?<!(?://[-\w\s]{2}))(?<!(?://[-\w\s]{3})) ... (?<!(?://[-\w\s]{20}))
+    #
+    # The regular expression above would instruct Python to search as far back as 20 spaces.
+    maxLookbehindDistance = 30
+    notPartOfComment = r""
+    moduleNamePatternStr = r""
+    paramPatternStr = r""
+    inputPatternStr = r""
+    outputPatternStr = r""
+
+    # ==== Form the Negative Lookbehind Expression ====
+    for i in range(0, maxLookbehindDistance + 1):
+        notPartOfComment += "(?<!(?://[-\w\s]{{{}}}))(?<!(?:\*[-\w\s]{{{}}}))".format(i, i)
+
+    # ==== Create the Regular Expressions ====
+    # First, create the raw strings:
+    moduleNamePatternStr = notPartOfComment + "module\s+(?:\$\[PREFIX\])([a-zA-Z\_0-9]+)"
+    paramPatternStr = notPartOfComment + "\s*parameter(?:\s*\${0,2}\[[-`\w+:*/{}$ \[\]]+\]){0,2}\s+([\w\$\[\]]+)\s*="
+    inputPatternStr = notPartOfComment + "\s*input(?:\s+\w+)?(?:\s*\${0,2}\[[-`\w+:*/{}()$ \[\]]+\]){0,2}\s+([\w+\$\[\]{}]+)\s*,?"
+    outputPatternStr = notPartOfComment + "\s*output(?:\s+\w+)?(?:\s*\${0,2}\[[-`\w+:*/{}()$ \[\]]+\]\s*){0,2}\s+([\w\$\[\]{}]+)\s*,?"
+
+    # Next, call the compile() method:
+    moduleNamePattern    = re.compile(moduleNamePatternStr)
+    moduleParamsPattern  = re.compile(paramPatternStr)
+    moduleInputsPattern  = re.compile(inputPatternStr)
+    moduleOutputsPattern = re.compile(outputPatternStr)
+
     # ==== Extract the Module Name first ====
     matches = re.findall(moduleNamePattern, moduleContents)
+
     # ==== Check that only one Match was found for the Module Name ====
     if (len(matches) != 1):
+        print(matches)
         print(moduleNameNotIdentified)
         exit()
     else:
@@ -215,5 +248,3 @@ if __name__ == "__main__":
         print(goodbyeMsg.format(outputFileName))
         print(jobDoneMsg)
         print("\n" + instantiatedModule)
-
-    
