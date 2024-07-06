@@ -165,7 +165,6 @@ if __name__ == "__main__":
 
     # ==== Check that only one Match was found for the Module Name ====
     if (len(matches) != 1):
-        print(matches)
         print(moduleNameNotIdentified)
         exit()
     else:
