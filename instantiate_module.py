@@ -206,17 +206,15 @@ if __name__ == "__main__":
     # the parameter declaration is happening *inside* the module. In this case, it would not be an input module parameter.
     paramPatternStr = notPartOfComment + "\s*parameter(\s*\${0,2}\[`?([-`\w+\*\$/: {}()]+)?(\$\[\w+\])?([-`\w+\*\$/: {}()]+)?\]\s*){0,2}(?(2)\s*|\s+)([\w$\[\]{}]+)\s*=(?!([-`\w\s>=+]+;))"
     parameterGroupIndex = 4 # the parameter name will be captured by the fifth group (group index 4)
-    # Note: the [^_] used in the regular expressions below is so that outputs such as
+    # The (\s*\${0,2}\{\w+\}) used in the regular expressions below is to allow inputs such as:
     #
-    #   $[PORT_TYPE]_fifo_reg
+    # input $${ARRAY_SIZE} mem_data
     #
-    # can be extracted correctly (i.e., fully)
-    # inputPatternStr = notPartOfComment + "\s*input(\s+\w+)?(\s*\${0,2}\[[-`\w+:*/{}()$ \[\]]+\][^_]\s*){0,2}(?(2)\s*|\s+)([\w+$\[\]{}]+)\s*,?"
-    # outputPatternStr = notPartOfComment + "\s*output(\s+\w+)?(\s*\${0,2}\[[-`\w+:*/{}()$ \[\]]+\][^_]\s*){0,2}(?(2)\s*|\s+)([\w$\[\]{}]+)\s*,?"
-    inputPatternStr = notPartOfComment + "\s*input(\s+\w+)?(\s*\${0,2}\[`?([-`\w+\*\$/: {}()]+)?(\$\[\w+\])?([-`\w+\*\$/: {}()]+)?\]\s*){0,2}(?(2)\s*|\s+)([\w$\[\]{}]+)\s*,?"
-    outputPatternStr = notPartOfComment + "\s*output(\s+\w+)?(\s*\${0,2}\[`?([-`\w+\*\$/: {}()]+)?(\$\[\w+\])?([-`\w+\*\$/: {}()]+)?\]\s*){0,2}(?(2)\s*|\s+)([\w$\[\]{}]+)\s*,?"
-    inputGroupIndex = 5 # the input port's name will be capture by the sixth group (i.e., ([\w$\[\]{}]+)), which has an index of 5
-    outputGroupIndex = 5
+    # to be captured correctly (i.e., fully).
+    inputPatternStr = notPartOfComment + "\s*input(\s+\w+)?(\s*\${0,2}\{\w+\})?(\s*\${0,2}\[`?([-`\w+\*\$/: {}()]+)?(\$\[\w+\])?([-`\w+\*\$/: {}()]+)?\]\s*){0,2}(?(2)\s*|\s+)([\w$\[\]{}]+)\s*,?"
+    outputPatternStr = notPartOfComment + "\s*output(\s+\w+)?(\s*\${0,2}\{\w+\})?(\s*\${0,2}\[`?([-`\w+\*\$/: {}()]+)?(\$\[\w+\])?([-`\w+\*\$/: {}()]+)?\]\s*){0,2}(?(2)\s*|\s+)([\w$\[\]{}]+)\s*,?"
+    inputGroupIndex = 6 # the input port's name will be capture by the seventh group (i.e., ([\w$\[\]{}]+)), which has an index of 6
+    outputGroupIndex = 6
 
     # Next, call the compile() method:
     moduleNamePattern    = re.compile(moduleNamePatternStr)
@@ -226,9 +224,9 @@ if __name__ == "__main__":
 
     # ==== Extract the Name, Parameters, Inputs, and Outputs ====
     moduleNames   = []
-    moduleParams  = [] # empty at the moment
-    moduleInputs  = [] # empty at the moment
-    moduleOutputs = [] # empty at the moment
+    moduleParams  = []
+    moduleInputs  = []
+    moduleOutputs = []
     
     for line in lines: # iterate over each line
         # Check the line to see if:
@@ -250,7 +248,7 @@ if __name__ == "__main__":
             parameterName = paramMatch[0][parameterGroupIndex]
             if parameterName not in moduleParams:
                 moduleParams.append(parameterName)
-            moduleParamMatches.append(paramMatch)
+
         # ==== Check if we have matched a module input ====
         if (len(inputMatch) != 0):
             inputName = inputMatch[0][inputGroupIndex]
@@ -270,16 +268,17 @@ if __name__ == "__main__":
         moduleName = moduleNames[0] # store the module name
 
     if (len(moduleInputs) == 0): # if there were no matches
-        print(noMatchesFound.format("input"))
+        print(noInputsIdentified)
         exit()
 
     if (len(moduleOutputs) == 0): # if there were no matches
-        print(noMatchesFound.format("output"))
+        print(noOutputsIdentified)
         exit()
 
     # ==== Check if any parameters were identified ====
+    moduleHasParams = True # let's assume the module has parameters, and we'll check our assumption below
     if (len(moduleParams) == 0): # if there were zero matches
-        print(noMatchesFound.format("parameter")) # print out message saying the module has no parameters (or none were identified)
+        print(noParamsFound) # print out message saying the module has no parameters (or none were identified)
         moduleHasParams = False
     
     # ==== Instantiate the Module ====
