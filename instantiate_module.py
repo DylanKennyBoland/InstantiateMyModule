@@ -76,7 +76,6 @@ moduleNameNotIdentified = errorTag + """The module name could not be identified.
 noParamsFound       = infoTag + """No parameters were identified for this module."""
 noInputsIdentified  = errorTag + """No module inputs were identified."""
 noOutputsIdentified = errorTag + """No module outputs were identified."""
-noMatchesFound  = errorTag + """No {} matches were made."""
 
 # Instantiated module print-out message
 jobDoneMsg = """
@@ -211,8 +210,8 @@ if __name__ == "__main__":
     # input $${ARRAY_SIZE} mem_data
     #
     # to be captured correctly (i.e., fully).
-    inputPatternStr = notPartOfComment + "\s*input(\s+\w+)?(\s*\${0,2}\{\w+\})?(\s*\${0,2}\[`?([-`\w+\*\$/: {}()]+)?(\$\[\w+\])?([-`\w+\*\$/: {}()]+)?\]\s*){0,2}(?(2)\s*|\s+)([\w$\[\]{}]+)\s*,?"
-    outputPatternStr = notPartOfComment + "\s*output(\s+\w+)?(\s*\${0,2}\{\w+\})?(\s*\${0,2}\[`?([-`\w+\*\$/: {}()]+)?(\$\[\w+\])?([-`\w+\*\$/: {}()]+)?\]\s*){0,2}(?(2)\s*|\s+)([\w$\[\]{}]+)\s*,?"
+    inputPatternStr = notPartOfComment + "\s*input(\s+\w+)?(\s*\${0,2}\{\w+\})?(\s*\${0,2}\[`?([-`\w+\*\$/: {}()]+)?(\$\[\w+\])?([-`\w+\*\$/: {}()]+)?\]\s*){0,2}(?(3)\s*|\s+)([\w$\[\]{}]+)\s*,?"
+    outputPatternStr = notPartOfComment + "\s*output(\s+\w+)?(\s*\${0,2}\{\w+\})?(\s*\${0,2}\[`?([-`\w+\*\$/: {}()]+)?(\$\[\w+\])?([-`\w+\*\$/: {}()]+)?\]\s*){0,2}(?(3)\s*|\s+)([\w$\[\]{}]+)\s*,?"
     inputGroupIndex = 6 # the input port's name will be capture by the seventh group (i.e., ([\w$\[\]{}]+)), which has an index of 6
     outputGroupIndex = 6
 
