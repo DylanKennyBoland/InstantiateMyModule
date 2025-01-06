@@ -194,7 +194,7 @@ if __name__ == "__main__":
 
     # ==== Form the Negative Lookbehind Expression ====
     for i in range(0, maxLookbehindDistance + 1):
-        notPartOfComment += "(?<!(?://[-\w\s.,]{{{}}}))(?<!(?:\*[-\w\s.,]{{{}}}))".format(i, i)
+        notPartOfComment += "(?<!(?://[-\w\s.,':()]{{{}}}))(?<!(?:\*[-\w\s.,':()]{{{}}}))".format(i, i)
 
     # ==== Create the Regular Expressions ====
     # First, create the raw strings:
